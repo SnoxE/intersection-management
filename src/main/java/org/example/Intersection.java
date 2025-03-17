@@ -1,4 +1,8 @@
+package org.example;
+
+import java.util.List;
+
 public interface Intersection {
     void addVehicle(Car car);
-    void step();
+    List<String> step();
 }
