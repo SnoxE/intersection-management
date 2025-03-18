@@ -22,3 +22,10 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+spotless {
+    java {
+        target 'src/**/*.java'
+        googleJavaFormat()
+    }
+}

@@ -1,61 +1,41 @@
 package org.example;
 
-import java.io.IOException;
-import java.util.ArrayDeque;
+import static org.example.core.CommandProcessor.processCommands;
+import static org.example.core.FourWayIntersection.createFourWayIntersection;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import org.example.core.FourWayIntersection;
+import org.example.dto.Command;
+import org.example.dto.SimulationResult.StepStatus;
+import org.example.utils.JsonReader;
+import org.example.utils.SimulationResultJsonGenerator;
 
+/** The entry point to the intersection traffic simulation. */
 public class Main {
-    public static void main(String[] args) throws IOException {
-        Road southRoad = new Road("south",
-                Set.of(new Lane("south1", Set.of("west"), new ArrayDeque<>(), LightColor.RED),
-                        new Lane("south2", Set.of("north", "east"), new ArrayDeque<>(), LightColor.RED)),
-                Set.of("west", "north", "east"));
 
-        Road westRoad = new Road("west",
-                Set.of(new Lane("west1", Set.of("north", "east", "south"), new ArrayDeque<>(), LightColor.RED)),
-                Set.of("north", "east", "south"));
-
-        Road northRoad = new Road("north",
-                Set.of(new Lane("north1", Set.of("east"), new ArrayDeque<>(), LightColor.RED),
-                        new Lane("north2", Set.of("south", "west"), new ArrayDeque<>(), LightColor.RED)),
-                Set.of("east", "south", "west"));
-
-        Road eastRoad = new Road("east",
-                Set.of(new Lane("east1", Set.of("south", "west", "north"), new ArrayDeque<>(), LightColor.RED)),
-                Set.of("south", "west", "north"));
-
-        FourWayIntersection fourWayIntersection = new FourWayIntersection("Intersection1",
-                Set.of(southRoad, westRoad, northRoad, eastRoad));
-        fourWayIntersection.intersectionInit();
-
-//        for (Road road : fourWayIntersection.getRoads()) {
-//            for (Lane lane : road.getStartLanes()) {
-//                if(lane.getTrafficLightColor() == LightColor.GREEN) {
-//                    System.out.println(lane.getId() + " " + lane.getQueue() + " " + lane.getQueueLength());
-//                }
-//            }
-//        }
-
-
-        List<Command> commandList = JsonReader.readCommandsFromJson("src/main/resources/input.json");
-
-        for (Command command : commandList) {
-            if (command.type().equals(Command.ADD_VEHICLE)) {
-                fourWayIntersection.addVehicle(
-                        new Car(command.vehicleId(),
-                                command.startRoad(),
-                                command.endRoad(),
-                                TrafficDirectionCalculator.getAbsoluteDirection(command.startRoad(), command.endRoad())));
-            } else if (command.type().equals(Command.STEP)) {
-                fourWayIntersection.step();
-            }
-        }
-
-        for (Road road : fourWayIntersection.getRoads()) {
-            for (Lane lane : road.getStartLanes()) {
-                System.out.println(lane.getId() + " " + lane.getQueue() + " " + lane.getQueue().size());
-            }
-        }
+  /**
+   * The main method that starts the simulation. It expects two command-line arguments - the input
+   * file path containing simulation commands and the output file path where the simulation results
+   * will be saved.
+   *
+   * @param args Command-line arguments: {@code <inputFilePath> <outputFilePath>}.
+   */
+  public static void main(String[] args) {
+    if (args.length != 2) {
+      System.out.println("Usage: java Main <inputFilePath> <outputFilePath>");
+      return;
     }
+
+    String inputFilePath = args[0];
+    String outputFilePath = args[1];
+
+    FourWayIntersection fourWayIntersection = createFourWayIntersection("Intersection1");
+    List<Command> commandList = JsonReader.readCommandsFromJson(inputFilePath);
+
+    List<StepStatus> stepStatuses = new ArrayList<>();
+    processCommands(commandList, fourWayIntersection, stepStatuses);
+
+    SimulationResultJsonGenerator.generateJsonOutputFile(stepStatuses, outputFilePath);
+  }
 }
